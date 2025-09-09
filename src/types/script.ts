@@ -1,31 +1,26 @@
 export interface Script {
-  id: string;
   name: string;
-  command: string;
+  code: string;
   description: string;
-  category: 'software' | 'sicherheit' | 'konfiguration' | 'befehl';
-  isGlobal: boolean;
-  autoEnrollment: boolean;
+  category: "software" | "safety" | "configuration" | "command";
+  statuses: string[];
   customers: string[];
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 export interface Customer {
-  id: string;
   name: string;
 }
 
 export const categoryIcons = {
-  software: 'Package',
-  sicherheit: 'Shield',
-  konfiguration: 'Settings',
-  befehl: 'Terminal'
+  software: "Package",
+  safety: "Shield",
+  configuration: "Settings",
+  command: "Terminal",
 } as const;
 
 export const categoryLabels = {
-  software: 'Software',
-  sicherheit: 'Sicherheit',
-  konfiguration: 'Konfiguration',
-  befehl: 'Befehl'
+  software: "Software",
+  safety: "Safety",
+  configuration: "Configuration",
+  command: "Command",
 } as const;

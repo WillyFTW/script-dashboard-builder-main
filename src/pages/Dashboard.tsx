@@ -1,27 +1,33 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { ScriptTable } from "@/components/ScriptTable";
 import { ScriptDialog } from "@/components/ScriptDialog";
 import { Script, Customer } from "@/types/script";
 import { Plus, Terminal, Package, Shield, Settings, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import hejubaLogo from "@/assets/hejuba-logo.png";
+import { useScripts } from "../hooks/useScripts";
 
 // Mock data
 const mockCustomers: Customer[] = [
-  { id: '1', name: 'Kunde A GmbH' },
-  { id: '2', name: 'Kunde B AG' },
-  { id: '3', name: 'Kunde C KG' },
-  { id: '4', name: 'Kunde D Ltd.' },
-  { id: '5', name: 'Kunde E Inc.' },
+  { name: "Kunde A GmbH" },
+  { name: "Kunde B AG" },
+  { name: "Kunde C KG" },
+  { name: "Kunde D Ltd." },
+  { name: "Kunde E Inc." },
 ];
 
 const mockScripts: Script[] = [
   {
-    id: '1',
-    name: 'Windows Update installieren',
-    command: `# Windows Updates installieren
+    name: "Windows Update installieren",
+    code: `# Windows Updates installieren
 Get-Module -Name PSWindowsUpdate -ListAvailable
 if (-not (Get-Module -Name PSWindowsUpdate -ListAvailable)) {
     Install-Module -Name PSWindowsUpdate -Force
@@ -29,51 +35,42 @@ if (-not (Get-Module -Name PSWindowsUpdate -ListAvailable)) {
 Import-Module PSWindowsUpdate
 Get-WindowsUpdate
 Install-WindowsUpdate -AcceptAll -AutoReboot`,
-    description: 'Installiert alle verfügbaren Windows Updates automatisch',
-    category: 'sicherheit',
-    isGlobal: true,
-    autoEnrollment: true,
-    customers: ['1', '2', '3'],
-    createdAt: new Date('2024-01-15'),
-    updatedAt: new Date('2024-01-20'),
+    description: "Installiert alle verfügbaren Windows Updates automatisch",
+    category: "safety",
+
+    customers: ["1", "2", "3"],
+    statuses: ["Auto"],
   },
   {
-    id: '2', 
-    name: 'Adobe Reader installieren',
-    command: `# Adobe Reader automatisch installieren
+    name: "Adobe Reader installieren",
+    code: `# Adobe Reader automatisch installieren
 $url = "https://get.adobe.com/reader/"
 $output = "$env:TEMP\\AdobeReader.exe"
 Invoke-WebRequest -Uri $url -OutFile $output
 Start-Process -FilePath $output -ArgumentList "/S" -Wait
 Remove-Item $output`,
-    description: 'Lädt Adobe Reader herunter und installiert es automatisch',
-    category: 'software',
-    isGlobal: false,
-    autoEnrollment: false,
-    customers: ['1', '4'],
-    createdAt: new Date('2024-01-10'),
-    updatedAt: new Date('2024-01-10'),
+    description: "Lädt Adobe Reader herunter und installiert es automatisch",
+    category: "software",
+
+    customers: ["1", "4"],
+    statuses: ["Global"],
   },
   {
-    id: '3',
-    name: 'Netzwerk-Konfiguration prüfen',
-    command: `# Netzwerk-Diagnose durchführen
+    name: "Netzwerk-Konfiguration prüfen",
+    code: `# Netzwerk-Diagnose durchführen
 ipconfig /all
 nslookup google.com
 ping -t 8.8.8.8
 Test-NetConnection -ComputerName "google.com" -Port 80`,
-    description: 'Führt eine umfassende Netzwerk-Diagnose durch',
-    category: 'konfiguration',
-    isGlobal: true,
-    autoEnrollment: false,
-    customers: ['2', '3', '5'],
-    createdAt: new Date('2024-01-12'),
-    updatedAt: new Date('2024-01-18'),
+    description: "Führt eine umfassende Netzwerk-Diagnose durch",
+    category: "configuration",
+
+    customers: ["2", "3", "5"],
+    statuses: ["Global"],
   },
   {
-    id: '4',
-    name: 'CPU Temperatur überwachen',
-    command: `# CPU Temperatur abfragen
+    name: "CPU Temperatur überwachen",
+    code: `# CPU Temperatur abfragen
 # Verwendet WMI zur Temperaturüberwachung
 $temperatureData = Get-WmiObject -Namespace "root/WMI" -Class "MSAcpi_ThermalZoneTemperature"
 if ($temperatureData) {
@@ -93,18 +90,26 @@ if ($temperatureData) {
         Write-Host "WARNUNG: Keine Temperatursensoren gefunden. Möglicherweise sind spezielle Treiber erforderlich."
     }
 }`,
-    description: 'Überwacht die CPU-Temperatur und gibt Warnungen bei kritischen Werten aus',
-    category: 'befehl',
-    isGlobal: false,
-    autoEnrollment: false,
-    customers: ['3', '5'],
-    createdAt: new Date('2024-01-22'),
-    updatedAt: new Date('2024-01-22'),
+    description:
+      "Überwacht die CPU-Temperatur und gibt Warnungen bei kritischen Werten aus",
+    category: "command",
+    statuses: ["Global"],
+    customers: ["3", "5"],
   },
 ];
 
 export const Dashboard = () => {
-  const [scripts, setScripts] = useState<Script[]>(mockScripts);
+  const {
+    scripts,
+    loading,
+    error,
+    fetchScripts,
+    deleteScript,
+    createScript,
+    updateScript,
+  } = useScripts();
+
+  //const [scripts, setScripts] = useState<Script[]>(mockScripts);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingScript, setEditingScript] = useState<Script | undefined>();
   const { toast } = useToast();
@@ -114,35 +119,26 @@ export const Dashboard = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (script: Script) => {
-    setScripts(prev => prev.filter(s => s.id !== script.id));
+  const handleDelete = (scriptToDelete: Script) => {
+    deleteScript(scriptToDelete.name);
     toast({
       title: "Skript gelöscht",
-      description: `"${script.name}" wurde erfolgreich gelöscht.`,
+      description: `"${name}" wurde erfolgreich gelöscht.`,
     });
   };
 
-  const handleSave = (scriptData: Omit<Script, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleSave = (scriptData: Script) => {
     if (editingScript) {
       // Update existing script
-      setScripts(prev => prev.map(s => 
-        s.id === editingScript.id 
-          ? { ...scriptData, id: editingScript.id, createdAt: editingScript.createdAt, updatedAt: new Date() }
-          : s
-      ));
+      updateScript(editingScript.name, scriptData);
+
       toast({
         title: "Skript aktualisiert",
         description: `"${scriptData.name}" wurde erfolgreich aktualisiert.`,
       });
     } else {
       // Create new script
-      const newScript: Script = {
-        ...scriptData,
-        id: Date.now().toString(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      setScripts(prev => [...prev, newScript]);
+      createScript(scriptData);
       toast({
         title: "Skript erstellt",
         description: `"${scriptData.name}" wurde erfolgreich erstellt.`,
@@ -158,8 +154,10 @@ export const Dashboard = () => {
 
   const getStatistics = () => {
     const totalScripts = scripts.length;
-    const globalScripts = scripts.filter(s => s.isGlobal).length;
-    const autoEnrollmentScripts = scripts.filter(s => s.autoEnrollment).length;
+    const globalScripts = scripts.filter((s) => s.isGlobal).length;
+    const autoEnrollmentScripts = scripts.filter(
+      (s) => s.autoEnrollment
+    ).length;
     const categories = scripts.reduce((acc, script) => {
       acc[script.category] = (acc[script.category] || 0) + 1;
       return acc;
@@ -193,7 +191,7 @@ export const Dashboard = () => {
                 </p>
               </div>
             </div>
-            <Button 
+            <Button
               onClick={handleNewScript}
               variant="outline"
               className="border-white/20 bg-white/10 text-white hover:bg-white/20"
@@ -206,7 +204,6 @@ export const Dashboard = () => {
       </div>
 
       <div className="max-w-7xl mx-auto p-6 space-y-6">
-
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="bg-card border-border shadow-card">
@@ -218,7 +215,9 @@ export const Dashboard = () => {
             <CardContent>
               <div className="flex items-center gap-2">
                 <Terminal className="h-5 w-5 text-primary" />
-                <span className="text-2xl font-bold text-foreground">{stats.totalScripts}</span>
+                <span className="text-2xl font-bold text-foreground">
+                  {stats.totalScripts}
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -232,7 +231,9 @@ export const Dashboard = () => {
             <CardContent>
               <div className="flex items-center gap-2">
                 <Package className="h-5 w-5 text-accent" />
-                <span className="text-2xl font-bold text-foreground">{stats.globalScripts}</span>
+                <span className="text-2xl font-bold text-foreground">
+                  {stats.globalScripts}
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -246,7 +247,9 @@ export const Dashboard = () => {
             <CardContent>
               <div className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-success" />
-                <span className="text-2xl font-bold text-foreground">{stats.autoEnrollmentScripts}</span>
+                <span className="text-2xl font-bold text-foreground">
+                  {stats.autoEnrollmentScripts}
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -260,7 +263,9 @@ export const Dashboard = () => {
             <CardContent>
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-warning" />
-                <span className="text-2xl font-bold text-foreground">{mockCustomers.length}</span>
+                <span className="text-2xl font-bold text-foreground">
+                  {mockCustomers.length}
+                </span>
               </div>
             </CardContent>
           </Card>

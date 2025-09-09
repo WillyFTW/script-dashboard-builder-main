@@ -13,7 +13,18 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ColumnFilter } from "@/components/ColumnFilter";
 import { Script, Customer, categoryLabels } from "@/types/script";
-import { Edit, Trash2, Search, Package, Shield, Settings, Terminal, Users, Globe, Zap } from "lucide-react";
+import {
+  Edit,
+  Trash2,
+  Search,
+  Package,
+  Shield,
+  Settings,
+  Terminal,
+  Users,
+  Globe,
+  Zap,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface ScriptTableProps {
@@ -30,71 +41,81 @@ const categoryIcons = {
   befehl: Terminal,
 };
 
-export const ScriptTable = ({ scripts, customers, onEdit, onDelete }: ScriptTableProps) => {
+export const ScriptTable = ({
+  scripts,
+  customers,
+  onEdit,
+  onDelete,
+}: ScriptTableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [customerFilter, setCustomerFilter] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
 
-  const getCustomerNames = (customerIds: string[]) => {
-    return customerIds
-      .map(id => customers.find(c => c.id === id)?.name)
-      .filter(Boolean)
-      .join(', ') || 'Keine Kunden';
+  const getCustomerNames = (customersOfScript: string[] | null) => {
+    if (!customersOfScript || customersOfScript.length === 0) {
+      return "Keine Kunden";
+    } else {
+      return customersOfScript?.join(", ") || "Keine Kunden";
+    }
   };
 
-  const filteredScripts = scripts.filter(script => {
+  const filteredScripts = scripts.filter((script) => {
     const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = (
+    const matchesSearch =
       script.name.toLowerCase().includes(searchLower) ||
       script.description.toLowerCase().includes(searchLower) ||
-      script.command.toLowerCase().includes(searchLower) ||
+      script.code.toLowerCase().includes(searchLower) ||
       getCustomerNames(script.customers).toLowerCase().includes(searchLower) ||
-      categoryLabels[script.category].toLowerCase().includes(searchLower)
-    );
+      categoryLabels[script.category].toLowerCase().includes(searchLower);
 
-    const matchesCategory = categoryFilter.length === 0 || categoryFilter.includes(script.category);
-    
-    const matchesCustomer = customerFilter.length === 0 || 
-      script.customers.some(customerId => customerFilter.includes(customerId));
-    
-    const scriptStatus = [];
-    if (script.isGlobal) scriptStatus.push('global');
-    if (script.autoEnrollment) scriptStatus.push('auto');
-    
-    const matchesStatus = statusFilter.length === 0 || 
-      statusFilter.some(status => scriptStatus.includes(status));
+    const matchesCategory =
+      categoryFilter.length === 0 || categoryFilter.includes(script.category);
+
+    const matchesCustomer =
+      customerFilter.length === 0 ||
+      script.customers.some((customerId) =>
+        customerFilter.includes(customerId)
+      );
+
+    const scriptStatus = script.statuses;
+
+    const matchesStatus =
+      statusFilter.length === 0 ||
+      statusFilter.some((status) => scriptStatus.includes(status));
 
     return matchesSearch && matchesCategory && matchesCustomer && matchesStatus;
   });
 
   // Generate filter options
-  const categoryOptions = Object.entries(categoryLabels).map(([key, label]) => ({
-    value: key,
-    label,
-    count: scripts.filter(s => s.category === key).length
-  }));
+  const categoryOptions = Object.entries(categoryLabels).map(
+    ([key, label]) => ({
+      value: key,
+      label,
+      count: scripts.filter((s) => s.category === key).length,
+    })
+  );
 
-  const customerOptions = customers.map(customer => ({
-    value: customer.id,
+  const customerOptions = customers.map((customer) => ({
+    value: customer.name,
     label: customer.name,
-    count: scripts.filter(s => s.customers.includes(customer.id)).length
+    count: scripts.filter((s) => s.customers.includes(customer.name)).length,
   }));
 
   const statusOptions = [
     {
-      value: 'global',
-      label: 'Global',
-      count: scripts.filter(s => s.isGlobal).length
+      value: "global",
+      label: "Global",
+      count: scripts.filter((s) => s.statuses.includes("Global")).length,
     },
     {
-      value: 'auto',
-      label: 'Auto Enrollment',
-      count: scripts.filter(s => s.autoEnrollment).length
-    }
+      value: "auto",
+      label: "Auto Enrollment",
+      count: scripts.filter((s) => s.statuses.includes("Auto")).length,
+    },
   ];
 
-  const CategoryIcon = ({ category }: { category: Script['category'] }) => {
+  const CategoryIcon = ({ category }: { category: Script["category"] }) => {
     const Icon = categoryIcons[category];
     return <Icon className="h-4 w-4" />;
   };
@@ -152,20 +173,22 @@ export const ScriptTable = ({ scripts, customers, onEdit, onDelete }: ScriptTabl
                 <TableHead className="text-foreground">Kunden</TableHead>
                 <TableHead className="text-foreground">Status</TableHead>
                 <TableHead className="text-foreground">Beschreibung</TableHead>
-                <TableHead className="text-foreground w-[120px]">Aktionen</TableHead>
+                <TableHead className="text-foreground w-[120px]">
+                  Aktionen
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredScripts.map((script) => (
-                <TableRow 
-                  key={script.id} 
+                <TableRow
+                  key={script.name}
                   className="border-border hover:bg-muted/30 transition-colors"
                 >
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       <CategoryIcon category={script.category} />
-                      <Link 
-                        to={`/script/${script.id}`}
+                      <Link
+                        to={`/script/${script.name}`} //previously was script.id
                         className="text-primary hover:text-primary/80 transition-colors underline-offset-4 hover:underline"
                       >
                         {script.name}
@@ -179,29 +202,42 @@ export const ScriptTable = ({ scripts, customers, onEdit, onDelete }: ScriptTabl
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1 max-w-[200px]">
-                      {script.customers.length > 0 ? script.customers.map(customerId => {
-                        const customer = customers.find(c => c.id === customerId);
-                        return customer ? (
-                          <Badge key={customerId} variant="tag" className="text-xs">
-                            <Users className="h-3 w-3 mr-1" />
-                            {customer.name}
-                          </Badge>
-                        ) : null;
-                      }) : (
-                        <span className="text-sm text-muted-foreground">Keine Kunden</span>
+                      {script.customers.length > 0 ? (
+                        script.customers.map((customer) => {
+                          return customer ? (
+                            <Badge
+                              key={customer}
+                              variant="tag"
+                              className="text-xs"
+                            >
+                              <Users className="h-3 w-3 mr-1" />
+                              {customer}
+                            </Badge>
+                          ) : null;
+                        })
+                      ) : (
+                        <span className="text-sm text-muted-foreground">
+                          Keine Kunden
+                        </span>
                       )}
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      {script.isGlobal && (
-                        <Badge variant="outline" className="w-fit bg-accent/20 text-accent-foreground border-accent/50">
+                      {script.statuses.includes("Global") && (
+                        <Badge
+                          variant="outline"
+                          className="w-fit bg-accent/20 text-accent-foreground border-accent/50"
+                        >
                           <Globe className="h-3 w-3 mr-1" />
                           Global
                         </Badge>
                       )}
-                      {script.autoEnrollment && (
-                        <Badge variant="outline" className="w-fit bg-primary/20 text-primary border-primary/50">
+                      {script.statuses.includes("Auto") && (
+                        <Badge
+                          variant="outline"
+                          className="w-fit bg-primary/20 text-primary border-primary/50"
+                        >
                           <Zap className="h-3 w-3 mr-1" />
                           Auto
                         </Badge>
@@ -210,7 +246,7 @@ export const ScriptTable = ({ scripts, customers, onEdit, onDelete }: ScriptTabl
                   </TableCell>
                   <TableCell>
                     <div className="max-w-[300px] truncate text-sm text-muted-foreground">
-                      {script.description || 'Keine Beschreibung'}
+                      {script.description || "Keine Beschreibung"}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -245,10 +281,9 @@ export const ScriptTable = ({ scripts, customers, onEdit, onDelete }: ScriptTabl
                 Keine Skripte gefunden
               </h3>
               <p className="text-muted-foreground">
-                {searchTerm ? 
-                  'Keine Skripte entsprechen Ihrer Suche.' : 
-                  'Noch keine PowerShell-Skripte vorhanden.'
-                }
+                {searchTerm
+                  ? "Keine Skripte entsprechen Ihrer Suche."
+                  : "Noch keine PowerShell-Skripte vorhanden."}
               </p>
             </div>
           )}
