@@ -43,7 +43,10 @@ export default function ScriptDetail() {
   const { scripts } = useScripts();
 
   useEffect(() => {
-    const foundScript = scripts.find((s) => s.name === name);
+    const foundScript = scripts.find((s) => {
+      console.log(s.name, name);
+      return s.name === name;
+    });
     if (foundScript) {
       setScript(foundScript);
       setCodeValue(foundScript.code);
