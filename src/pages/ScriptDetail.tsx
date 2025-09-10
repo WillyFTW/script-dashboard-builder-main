@@ -43,7 +43,7 @@ export default function ScriptDetail() {
   const { scripts, createScript } = useScripts();
 
   useEffect(() => {
-    const foundScript = mockScripts.find((s) => s.name === name);
+    const foundScript = scripts.find((s) => s.name === name);
     if (foundScript) {
       setScript(foundScript);
       setCodeValue(foundScript.code);
