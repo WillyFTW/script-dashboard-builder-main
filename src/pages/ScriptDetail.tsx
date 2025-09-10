@@ -24,7 +24,7 @@ import {
   categoryIcons,
 } from "@/types/script";
 import { useState, useEffect } from "react";
-import { useScripts } from "@/hooks/useScripts";
+import { useScripts, loading } from "@/hooks/useScripts";
 
 // Mock data - in a real app this would come from props/context or API
 const mockScripts: Script[] = [];
@@ -41,11 +41,9 @@ export default function ScriptDetail() {
   const [script, setScript] = useState<Script | null>(null);
   const [codeValue, setCodeValue] = useState("");
   const { scripts } = useScripts();
-  console.log("LOG1", scripts);
 
   useEffect(() => {
     const foundScript = scripts.find((s) => {
-      console.log("LOG2", s.name, name);
       return s.name === name;
     });
     if (foundScript) {
@@ -53,6 +51,14 @@ export default function ScriptDetail() {
       setCodeValue(foundScript.code);
     }
   }, [name, scripts]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-muted-foreground">Lade Skript...</div>
+      </div>
+    );
+  }
 
   if (!script) {
     return (
