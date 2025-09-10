@@ -54,8 +54,11 @@ export default function ScriptDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-muted-foreground">Lade Skript...</div>
+      <div className="text-center py-12">
+        <Globe className="h-12 w-12 text-muted-foreground mx-auto mb-4 animate-spin" />
+        <h3 className="text-lg font-medium text-foreground mb-2">
+          Lade Skripte...
+        </h3>
       </div>
     );
   }
