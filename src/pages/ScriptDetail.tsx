@@ -24,7 +24,7 @@ import {
   categoryIcons,
 } from "@/types/script";
 import { useState, useEffect } from "react";
-import { useScripts, loading } from "@/hooks/useScripts";
+import { useScripts } from "@/hooks/useScripts";
 
 // Mock data - in a real app this would come from props/context or API
 const mockScripts: Script[] = [];
@@ -40,7 +40,7 @@ export default function ScriptDetail() {
   const navigate = useNavigate();
   const [script, setScript] = useState<Script | null>(null);
   const [codeValue, setCodeValue] = useState("");
-  const { scripts } = useScripts();
+  const { scripts, loading } = useScripts();
 
   useEffect(() => {
     const foundScript = scripts.find((s) => {
