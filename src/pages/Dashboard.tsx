@@ -281,6 +281,7 @@ export const Dashboard = () => {
         <ScriptTable
           scripts={scripts}
           customers={customers}
+          loading={loading}
           onEdit={handleEdit}
           onDelete={handleDelete}
         />

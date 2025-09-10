@@ -32,6 +32,7 @@ import { Link } from "react-router-dom";
 interface ScriptTableProps {
   scripts: Script[];
   customers: Customer[];
+  loading: boolean;
   onEdit: (script: Script) => void;
   onDelete: (script: Script) => void;
 }
@@ -39,6 +40,7 @@ interface ScriptTableProps {
 export const ScriptTable = ({
   scripts,
   customers,
+  loading,
   onEdit,
   onDelete,
 }: ScriptTableProps) => {
@@ -118,6 +120,17 @@ export const ScriptTable = ({
     const Icon = categoryIcons[category];
     return <Icon className="h-4 w-4" />;
   };
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <Globe className="h-12 w-12 text-muted-foreground mx-auto mb-4 animate-spin" />
+        <h3 className="text-lg font-medium text-foreground mb-2">
+          Lade Skripte...
+        </h3>
+      </div>
+    );
+  }
 
   return (
     <Card className="bg-gradient-secondary border-border shadow-card">
