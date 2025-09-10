@@ -40,7 +40,7 @@ export default function ScriptDetail() {
   const navigate = useNavigate();
   const [script, setScript] = useState<Script | null>(null);
   const [codeValue, setCodeValue] = useState("");
-  const { scripts, createScript } = useScripts();
+  const { scripts } = useScripts();
 
   useEffect(() => {
     const foundScript = scripts.find((s) => s.name === name);
