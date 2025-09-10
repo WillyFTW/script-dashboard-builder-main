@@ -12,14 +12,16 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ColumnFilter } from "@/components/ColumnFilter";
-import { Script, Customer, categoryLabels } from "@/types/script";
+import {
+  Script,
+  Customer,
+  categoryLabels,
+  categoryIcons,
+} from "@/types/script";
 import {
   Edit,
   Trash2,
   Search,
-  Package,
-  Shield,
-  Settings,
   Terminal,
   Users,
   Globe,
@@ -33,13 +35,6 @@ interface ScriptTableProps {
   onEdit: (script: Script) => void;
   onDelete: (script: Script) => void;
 }
-
-const categoryIcons = {
-  software: Package,
-  sicherheit: Shield,
-  konfiguration: Settings,
-  befehl: Terminal,
-};
 
 export const ScriptTable = ({
   scripts,
@@ -63,22 +58,24 @@ export const ScriptTable = ({
   const filteredScripts = scripts.filter((script) => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch =
-      script.name.toLowerCase().includes(searchLower) ||
-      script.description.toLowerCase().includes(searchLower) ||
-      script.code.toLowerCase().includes(searchLower) ||
+      (script.name?.toLowerCase() || "").includes(searchLower) ||
+      (script.description?.toLowerCase() || "").includes(searchLower) ||
+      (script.code?.toLowerCase() || "").includes(searchLower) ||
       getCustomerNames(script.customers).toLowerCase().includes(searchLower) ||
-      categoryLabels[script.category].toLowerCase().includes(searchLower);
+      (categoryLabels[script.category]?.toLowerCase() || "").includes(
+        searchLower
+      );
 
     const matchesCategory =
       categoryFilter.length === 0 || categoryFilter.includes(script.category);
 
     const matchesCustomer =
       customerFilter.length === 0 ||
-      script.customers.some((customerId) =>
-        customerFilter.includes(customerId)
+      (script.customers || []).some((customerName) =>
+        customerFilter.includes(customerName)
       );
 
-    const scriptStatus = script.statuses;
+    const scriptStatus = script.statuses || [];
 
     const matchesStatus =
       statusFilter.length === 0 ||
@@ -96,20 +93,22 @@ export const ScriptTable = ({
     })
   );
 
-  const customerOptions = customers.map((customer) => ({
-    value: customer.name,
-    label: customer.name,
-    count: scripts.filter((s) => s.customers.includes(customer.name)).length,
-  }));
+  const customerOptions = customers.map((customer) => {
+    return {
+      value: customer.name,
+      label: customer.name,
+      count: scripts.filter((s) => s.customers.includes(customer.name)).length,
+    };
+  });
 
   const statusOptions = [
     {
-      value: "global",
+      value: "Global",
       label: "Global",
       count: scripts.filter((s) => s.statuses.includes("Global")).length,
     },
     {
-      value: "auto",
+      value: "Auto",
       label: "Auto Enrollment",
       count: scripts.filter((s) => s.statuses.includes("Auto")).length,
     },

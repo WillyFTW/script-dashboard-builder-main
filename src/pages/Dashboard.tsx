@@ -9,11 +9,25 @@ import {
 } from "@/components/ui/card";
 import { ScriptTable } from "@/components/ScriptTable";
 import { ScriptDialog } from "@/components/ScriptDialog";
-import { Script, Customer } from "@/types/script";
+import {
+  Script,
+  Customer,
+  categoryIcons,
+  categoryLabels,
+} from "@/types/script";
 import { Plus, Terminal, Package, Shield, Settings, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import hejubaLogo from "@/assets/hejuba-logo.png";
 import { useScripts } from "../hooks/useScripts";
+import { useCustomers } from "../hooks/useCustomers";
+import { add } from "date-fns";
+
+addEventListener("error", (event) => {
+  console.log("Global error handler:", event.message, event.error);
+});
+addEventListener("unhandledrejection", (event) => {
+  console.log("Global unhandled rejection handler:", event.reason);
+});
 
 // Mock data
 const mockCustomers: Customer[] = [
@@ -109,40 +123,32 @@ export const Dashboard = () => {
     updateScript,
   } = useScripts();
 
-  //const [scripts, setScripts] = useState<Script[]>(mockScripts);
+  const {
+    customers,
+    loading: loadingCustomers,
+    error: errorCustomers,
+  } = useCustomers();
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingScript, setEditingScript] = useState<Script | undefined>();
   const { toast } = useToast();
 
-  const handleEdit = (script: Script) => {
+  const handleEdit = async (script: Script) => {
     setEditingScript(script);
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (scriptToDelete: Script) => {
+  const handleDelete = async (scriptToDelete: Script) => {
     deleteScript(scriptToDelete.name);
-    toast({
-      title: "Skript gelöscht",
-      description: `"${name}" wurde erfolgreich gelöscht.`,
-    });
   };
 
-  const handleSave = (scriptData: Script) => {
+  const handleSave = async (scriptData: Script) => {
     if (editingScript) {
       // Update existing script
       updateScript(editingScript.name, scriptData);
-
-      toast({
-        title: "Skript aktualisiert",
-        description: `"${scriptData.name}" wurde erfolgreich aktualisiert.`,
-      });
     } else {
       // Create new script
       createScript(scriptData);
-      toast({
-        title: "Skript erstellt",
-        description: `"${scriptData.name}" wurde erfolgreich erstellt.`,
-      });
     }
     setEditingScript(undefined);
   };
@@ -264,7 +270,7 @@ export const Dashboard = () => {
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-warning" />
                 <span className="text-2xl font-bold text-foreground">
-                  {mockCustomers.length}
+                  {customers.length}
                 </span>
               </div>
             </CardContent>
@@ -274,7 +280,7 @@ export const Dashboard = () => {
         {/* Main Table */}
         <ScriptTable
           scripts={scripts}
-          customers={mockCustomers}
+          customers={customers}
           onEdit={handleEdit}
           onDelete={handleDelete}
         />
@@ -284,7 +290,7 @@ export const Dashboard = () => {
           open={isDialogOpen}
           onOpenChange={setIsDialogOpen}
           script={editingScript}
-          customers={mockCustomers}
+          customers={customers}
           onSave={handleSave}
         />
       </div>

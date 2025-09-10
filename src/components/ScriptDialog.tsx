@@ -1,37 +1,51 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PowerShellCodeEditor } from "./PowerShellCodeEditor";
 import { CustomerTagSelector } from "./CustomerTagSelector";
-import { Script, Customer, categoryLabels } from "@/types/script";
-import { Package, Shield, Settings, Terminal } from "lucide-react";
+import {
+  Script,
+  Customer,
+  categoryLabels,
+  categoryIcons,
+} from "@/types/script";
 
 interface ScriptDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   script?: Script;
   customers: Customer[];
-  onSave: (script: Omit<Script, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onSave: (script: Script) => void;
 }
 
-const categoryIcons = {
-  software: Package,
-  sicherheit: Shield,
-  konfiguration: Settings,
-  befehl: Terminal,
-};
-
-export const ScriptDialog = ({ open, onOpenChange, script, customers, onSave }: ScriptDialogProps) => {
+export const ScriptDialog = ({
+  open,
+  onOpenChange,
+  script,
+  customers,
+  onSave,
+}: ScriptDialogProps) => {
   const [formData, setFormData] = useState({
-    name: '',
-    command: '',
-    description: '',
-    category: 'software' as Script['category'],
+    name: "",
+    command: "",
+    description: "",
+    category: "software" as Script["category"],
     isGlobal: false,
     autoEnrollment: false,
     customers: [] as string[],
@@ -41,19 +55,19 @@ export const ScriptDialog = ({ open, onOpenChange, script, customers, onSave }: 
     if (script) {
       setFormData({
         name: script.name,
-        command: script.command,
+        command: script.code,
         description: script.description,
         category: script.category,
-        isGlobal: script.isGlobal,
-        autoEnrollment: script.autoEnrollment,
+        isGlobal: script.statuses.includes("Global"),
+        autoEnrollment: script.statuses.includes("Auto"),
         customers: script.customers,
       });
     } else {
       setFormData({
-        name: '',
-        command: '',
-        description: '',
-        category: 'software',
+        name: "",
+        command: "",
+        description: "",
+        category: "software",
         isGlobal: false,
         autoEnrollment: false,
         customers: [],
@@ -62,14 +76,26 @@ export const ScriptDialog = ({ open, onOpenChange, script, customers, onSave }: 
   }, [script, open]);
 
   const handleSave = () => {
-    onSave(formData);
+    const statuses: string[] = [];
+    if (formData.isGlobal) statuses.push("Global");
+    if (formData.autoEnrollment) statuses.push("Auto");
+
+    const scriptData = {
+      name: formData.name,
+      code: formData.command,
+      description: formData.description,
+      category: formData.category,
+      statuses: statuses,
+      customers: formData.customers,
+    };
+    onSave(scriptData);
     onOpenChange(false);
   };
 
-  const handleCustomerChange = (customerIds: string[]) => {
-    setFormData(prev => ({
+  const handleCustomerChange = (customerNames: string[]) => {
+    setFormData((prev) => ({
       ...prev,
-      customers: customerIds
+      customers: customerNames,
     }));
   };
 
@@ -78,7 +104,7 @@ export const ScriptDialog = ({ open, onOpenChange, script, customers, onSave }: 
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
           <DialogTitle className="text-foreground">
-            {script ? 'Skript bearbeiten' : 'Neues Skript erstellen'}
+            {script ? "Skript bearbeiten" : "Neues Skript erstellen"}
           </DialogTitle>
         </DialogHeader>
 
@@ -89,7 +115,9 @@ export const ScriptDialog = ({ open, onOpenChange, script, customers, onSave }: 
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
                 placeholder="Skriptname eingeben..."
                 className="bg-background/50 border-border"
               />
@@ -99,8 +127,8 @@ export const ScriptDialog = ({ open, onOpenChange, script, customers, onSave }: 
               <Label htmlFor="category">Kategorie</Label>
               <Select
                 value={formData.category}
-                onValueChange={(value: Script['category']) => 
-                  setFormData(prev => ({ ...prev, category: value }))
+                onValueChange={(value: Script["category"]) =>
+                  setFormData((prev) => ({ ...prev, category: value }))
                 }
               >
                 <SelectTrigger className="bg-background/50 border-border">
@@ -108,9 +136,14 @@ export const ScriptDialog = ({ open, onOpenChange, script, customers, onSave }: 
                 </SelectTrigger>
                 <SelectContent className="bg-popover border-border">
                   {Object.entries(categoryLabels).map(([key, label]) => {
-                    const Icon = categoryIcons[key as keyof typeof categoryIcons];
+                    const Icon =
+                      categoryIcons[key as keyof typeof categoryIcons];
                     return (
-                      <SelectItem key={key} value={key} className="hover:bg-accent">
+                      <SelectItem
+                        key={key}
+                        value={key}
+                        className="hover:bg-accent"
+                      >
                         <div className="flex items-center gap-2">
                           <Icon className="h-4 w-4" />
                           {label}
@@ -128,7 +161,12 @@ export const ScriptDialog = ({ open, onOpenChange, script, customers, onSave }: 
             <Textarea
               id="description"
               value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
               placeholder="Beschreibung des Skripts..."
               className="bg-background/50 border-border"
               rows={3}
@@ -137,7 +175,9 @@ export const ScriptDialog = ({ open, onOpenChange, script, customers, onSave }: 
 
           <PowerShellCodeEditor
             value={formData.command}
-            onChange={(value) => setFormData(prev => ({ ...prev, command: value }))}
+            onChange={(value) =>
+              setFormData((prev) => ({ ...prev, command: value }))
+            }
           />
 
           <div className="flex flex-wrap gap-6">
@@ -145,8 +185,8 @@ export const ScriptDialog = ({ open, onOpenChange, script, customers, onSave }: 
               <Checkbox
                 id="isGlobal"
                 checked={formData.isGlobal}
-                onCheckedChange={(checked) => 
-                  setFormData(prev => ({ ...prev, isGlobal: !!checked }))
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({ ...prev, isGlobal: !!checked }))
                 }
               />
               <Label htmlFor="isGlobal" className="cursor-pointer">
@@ -158,8 +198,11 @@ export const ScriptDialog = ({ open, onOpenChange, script, customers, onSave }: 
               <Checkbox
                 id="autoEnrollment"
                 checked={formData.autoEnrollment}
-                onCheckedChange={(checked) => 
-                  setFormData(prev => ({ ...prev, autoEnrollment: !!checked }))
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    autoEnrollment: !!checked,
+                  }))
                 }
               />
               <Label htmlFor="autoEnrollment" className="cursor-pointer">
@@ -175,18 +218,18 @@ export const ScriptDialog = ({ open, onOpenChange, script, customers, onSave }: 
           />
 
           <div className="flex justify-end gap-3 pt-4">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => onOpenChange(false)}
               className="bg-background/50 border-border"
             >
               Abbrechen
             </Button>
-            <Button 
+            <Button
               onClick={handleSave}
               className="bg-gradient-primary shadow-glow"
             >
-              {script ? 'Speichern' : 'Erstellen'}
+              {script ? "Speichern" : "Erstellen"}
             </Button>
           </div>
         </div>

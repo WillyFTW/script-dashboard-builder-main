@@ -1,3 +1,5 @@
+import { Package, Shield, Settings, Terminal } from "lucide-react";
+
 export interface Script {
   name: string;
   code: string;
@@ -12,15 +14,15 @@ export interface Customer {
 }
 
 export const categoryIcons = {
-  software: "Package",
-  safety: "Shield",
-  configuration: "Settings",
-  command: "Terminal",
+  Software: Package,
+  Safety: Shield,
+  Configuration: Settings,
+  Command: Terminal,
 } as const;
 
 export const categoryLabels = {
-  software: "Software",
-  safety: "Safety",
-  configuration: "Configuration",
-  command: "Command",
+  Software: "Software",
+  Safety: "Safety",
+  Configuration: "Configuration",
+  Command: "Command",
 } as const;

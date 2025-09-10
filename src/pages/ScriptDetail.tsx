@@ -17,7 +17,12 @@ import {
   Settings,
   Terminal,
 } from "lucide-react";
-import { Script, Customer, categoryLabels } from "@/types/script";
+import {
+  Script,
+  Customer,
+  categoryLabels,
+  categoryIcons,
+} from "@/types/script";
 import { useState, useEffect } from "react";
 import { useScripts } from "@/hooks/useScripts";
 
@@ -29,13 +34,6 @@ const mockCustomers: Customer[] = [
   { name: "TechStart GmbH" },
   { name: "Global Solutions" },
 ];
-
-const categoryIcons = {
-  software: Package,
-  sicherheit: Shield,
-  konfiguration: Settings,
-  befehl: Terminal,
-};
 
 export default function ScriptDetail() {
   const { name } = useParams<{ name: string }>();
@@ -75,10 +73,12 @@ export default function ScriptDetail() {
     );
   }
 
-  const getCustomerNames = (customerIds: string[]) => {
-    return customerIds
-      .map((id) => mockCustomers.find((c) => c.id === id))
-      .filter(Boolean);
+  const getCustomerNames = (customersOfScript: string[] | null) => {
+    if (!customersOfScript || customersOfScript.length === 0) {
+      return "Keine Kunden";
+    } else {
+      return customersOfScript?.join(", ") || "Keine Kunden";
+    }
   };
 
   const CategoryIcon = categoryIcons[script.category];
@@ -143,7 +143,7 @@ export default function ScriptDetail() {
                     Status
                   </label>
                   <div className="mt-1 space-y-2">
-                    {script.isGlobal && (
+                    {script.statuses.includes("Global") && (
                       <Badge
                         variant="outline"
                         className="bg-accent/20 text-accent-foreground border-accent/50 block w-fit"
@@ -152,7 +152,7 @@ export default function ScriptDetail() {
                         Global
                       </Badge>
                     )}
-                    {script.autoEnrollment && (
+                    {script.statuses.includes("Auto") && (
                       <Badge
                         variant="outline"
                         className="bg-primary/20 text-primary border-primary/50 block w-fit"
@@ -161,11 +161,12 @@ export default function ScriptDetail() {
                         Auto Enrollment
                       </Badge>
                     )}
-                    {!script.isGlobal && !script.autoEnrollment && (
-                      <span className="text-sm text-muted-foreground">
-                        Standard
-                      </span>
-                    )}
+                    {!script.statuses.includes("Global") &&
+                      !script.statuses.includes("Auto") && (
+                        <span className="text-sm text-muted-foreground">
+                          Standard
+                        </span>
+                      )}
                   </div>
                 </div>
 
@@ -176,15 +177,15 @@ export default function ScriptDetail() {
                     Zugewiesene Kunden
                   </label>
                   <div className="mt-2 space-y-2">
-                    {getCustomerNames(script.customers).length > 0 ? (
-                      getCustomerNames(script.customers).map((customer) => (
+                    {script.customers.length > 0 ? (
+                      script.customers.map((customer) => (
                         <Badge
-                          key={customer!.id}
+                          key={customer}
                           variant="tag"
                           className="block w-fit"
                         >
                           <Users className="h-3 w-3 mr-1" />
-                          {customer!.name}
+                          {customer}
                         </Badge>
                       ))
                     ) : (
@@ -196,26 +197,6 @@ export default function ScriptDetail() {
                 </div>
 
                 <Separator />
-
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Erstellt
-                  </label>
-                  <div className="mt-1 flex items-center gap-2 text-sm text-foreground">
-                    <Calendar className="h-4 w-4" />
-                    {script.createdAt.toLocaleDateString("de-DE")}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Zuletzt geändert
-                  </label>
-                  <div className="mt-1 flex items-center gap-2 text-sm text-foreground">
-                    <Calendar className="h-4 w-4" />
-                    {script.updatedAt.toLocaleDateString("de-DE")}
-                  </div>
-                </div>
               </div>
             </Card>
           </div>

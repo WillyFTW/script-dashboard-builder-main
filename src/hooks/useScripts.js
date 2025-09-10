@@ -1,40 +1,39 @@
 import { useState, useEffect } from "react";
 import api from "../services/api";
+import { useToast } from "@/hooks/use-toast";
 
 export function useScripts(name) {
   const [scripts, setScripts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  //TODO clean up abort controllers on unmount and parameter name
+  const { toast } = useToast();
+
   // --- Fetch scripts ---
-  const fetchScripts = async (signal) => {
+  const fetchScripts = async (overrideName, signal) => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await api.get("/scripts", { signal });
-      setScripts(response.data);
+      const url = overrideName
+        ? `/scripts/${encodeURIComponent(overrideName)}`
+        : "/scripts";
+
+      const options = signal ? { signal } : {};
+      const response = await api.get(url, options);
+
+      setScripts(overrideName ? [response.data] : response.data);
     } catch (err) {
       if (err.name !== "CanceledError") {
-        setError(err.message || "Failed to fetch scripts");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchScriptByName = async (name, signal) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await api.get(`/scripts/${encodeURIComponent(name)}`, {
-        signal,
-      });
-      setScripts([response.data]); // always an array
-    } catch (err) {
-      if (err.name !== "CanceledError") {
-        setError(err.message || `Failed to fetch script "${name}"`);
+        setError(
+          err.message ||
+            (overrideName
+              ? `Failed to fetch script "${overrideName}"`
+              : "Failed to fetch scripts")
+        );
+        toast({
+          title: "Fehler beim Laden der Skripte",
+          description: `${err.response?.data?.error || err.message}`,
+        });
       }
     } finally {
       setLoading(false);
@@ -43,16 +42,10 @@ export function useScripts(name) {
 
   useEffect(() => {
     const controller = new AbortController();
+    fetchScripts(name, controller.signal);
 
-    if (name) {
-      fetchScriptByName(name, controller.signal);
-    } else {
-      fetchScripts(controller.signal);
-    }
-
-    return () => controller.abort(); // ✅ proper cleanup
+    return () => controller.abort();
   }, [name]);
-  // run only once on mount
 
   // --- Delete a script ---
   const deleteScript = async (name) => {
@@ -62,19 +55,30 @@ export function useScripts(name) {
 
     try {
       setScripts((prev) => prev.filter((s) => s.name !== name)); // optimistic
-      await api.delete(`/scripts/${encodeURIComponent(name)}`, {
-        signal: controller.signal,
+      const response = await api.delete(
+        `/scripts/${encodeURIComponent(name)}`,
+        {
+          signal: controller.signal,
+        }
+      );
+
+      toast({
+        title: "Skript gelöscht",
+        description: `${response.data.message}`,
       });
     } catch (err) {
       if (err.name !== "CanceledError") {
         setError(err.message || "Failed to delete script");
+        console.error(err);
+        toast({
+          title: "Fehler beim Löschen des Skripts",
+          description: `${err.response?.data?.error || err.message}`,
+        });
         await fetchScripts(); // rollback
       }
     } finally {
       setLoading(false);
     }
-
-    return () => controller.abort();
   };
 
   // --- Create a new script ---
@@ -87,16 +91,24 @@ export function useScripts(name) {
       const response = await api.post("/scripts", script, {
         signal: controller.signal,
       });
-      setScripts((prev) => [...prev, response.data]); // optimistic
+
+      setScripts((prev) => [...prev, script]);
+      toast({
+        title: "Skript erstellt",
+        description: `${response.data.message}`,
+      });
     } catch (err) {
       if (err.name !== "CanceledError") {
         setError(err.message || "Failed to create script");
+        toast({
+          title: "Fehler beim Erstellen des Skripts",
+          description: `${err.response?.data?.error || err.message}`,
+        });
+        console.error(err);
       }
     } finally {
       setLoading(false);
     }
-
-    return () => controller.abort();
   };
 
   // --- Update an existing script ---
@@ -111,18 +123,26 @@ export function useScripts(name) {
         updatedFields,
         { signal: controller.signal }
       );
+
       setScripts((prev) =>
-        prev.map((s) => (s.name === name ? { ...s, ...response.data } : s))
+        prev.map((s) => (s.name === name ? { ...s, ...updatedFields } : s))
       );
+      toast({
+        title: "Skript aktualisiert",
+        description: `${response.data.message}`,
+      });
     } catch (err) {
       if (err.name !== "CanceledError") {
         setError(err.message || "Failed to update script");
+        console.error(err);
+        toast({
+          title: "Fehler beim Aktualisieren des Skripts",
+          description: `${err.response?.data?.error || err.message}`,
+        });
       }
     } finally {
       setLoading(false);
     }
-
-    return () => controller.abort();
   };
 
   return {
@@ -130,7 +150,6 @@ export function useScripts(name) {
     loading,
     error,
     fetchScripts,
-    fetchScriptByName,
     deleteScript,
     createScript,
     updateScript,
