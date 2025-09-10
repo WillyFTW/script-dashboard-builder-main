@@ -52,7 +52,7 @@ export default function ScriptDetail() {
       setScript(foundScript);
       setCodeValue(foundScript.code);
     }
-  }, [name]);
+  }, [name, scripts]);
 
   if (!script) {
     return (
